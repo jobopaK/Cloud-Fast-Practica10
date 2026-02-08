@@ -1,0 +1,39 @@
+services:
+  # --- SERVICIO 1: PROXY (Nginx) ---
+  proxy:
+    image: nginx:latest
+    container_name: proxy_nginx
+    ports:
+      - "80:80" # Único puerto expuesto al Host (Requisito Seguridad Perimetral)
+    volumes:
+      # Montamos nuestra configuración dentro del contenedor
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - backend
+    networks:
+      - red_interna
+
+  # --- SERVICIO 2: BACKEND (Python/Flask) ---
+  backend:
+    build: ./backend # Construye la imagen usando el Dockerfile de la carpeta backend
+    container_name: api_backend
+    # No tiene "ports", por lo tanto NO es accesible desde fuera (Requisito Seguridad)
+    environment:
+      - REDIS_HOST=redis
+    depends_on:
+      - redis
+    networks:
+      - red_interna
+
+  # --- SERVICIO 3: DATOS (Redis) ---
+  redis:
+    image: redis:alpine
+    container_name: db_redis
+    # No tiene "ports", solo accesible por la red interna
+    networks:
+      - red_interna
+
+# Definición de la red privada
+networks:
+  red_interna:
+    driver: bridge
